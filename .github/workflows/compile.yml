@@ -1,24 +1,14 @@
-name: WiFiController Build Examples
+name: WiFiController Build
 
-on:
-  push:
-    paths-ignore:
-      - '**.md'
-  pull_request:
-    paths-ignore:
-      - '**.md'
+on: [push, pull_request]
 
 jobs:
-  compile-examples:
+  compile:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        board:
-          - fqbn: "esp8266:esp8266:nodemcuv2"
-            url: "https://arduino.esp8266.com"
-          - fqbn: "esp32:esp32:esp32"
-            url: "https://raw.githubusercontent.com"
+        board: [esp8266, esp32]
 
     steps:
       - name: Checkout
@@ -29,24 +19,35 @@ jobs:
 
       - name: Install Platforms
         run: |
-          # Adiciona a URL da placa atual da matriz de forma limpa
-          arduino-cli core update-index --additional-urls "${{ matrix.board.url }}"
-          # Extrai o nome do core (esp32 ou esp8266) do FQBN
-          CORE=$(echo "${{ matrix.board.fqbn }}" | cut -d: -f1-2)
-          arduino-cli core install "$CORE" --additional-urls "${{ matrix.board.url }}"
+          # 1. Configura as URLs fixas para evitar erro de variável inválida
+          arduino-cli config init --overwrite
+          arduino-cli config add board_manager.additional_urls https://arduino.esp8266.com
+          arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com
+          
+          # 2. Atualiza e instala de acordo com a placa da vez
+          arduino-cli core update-index
+          if [ "${{ matrix.board }}" == "esp8266" ]; then
+            arduino-cli core install esp8266:esp8266
+          else
+            arduino-cli core install esp32:esp32
+          fi
 
-      - name: Install WiFiController Library
+      - name: Install Library
         run: |
-          # Simula a instalação da biblioteca no ambiente do runner
           mkdir -p $HOME/Arduino/libraries
           ln -s $GITHUB_WORKSPACE $HOME/Arduino/libraries/WiFiController
 
-      - name: Compile Examples
+      - name: Build Examples
         run: |
+          # Define o FQBN correto baseado na matriz
+          if [ "${{ matrix.board }}" == "esp8266" ]; then
+            FQBN="esp8266:esp8266:nodemcuv2"
+          else
+            FQBN="esp32:esp32:esp32"
+          fi
+          
           # Busca e compila cada exemplo .ino
-          # O WiFiManager usa um loop similar para garantir cobertura total
           for example in $(find examples -name "*.ino"); do
-            echo "-------------------------------------------------------"
-            echo "Compilando: $example"
-            arduino-cli compile --fqbn ${{ matrix.board.fqbn }} "$example"
+            echo "Compilando: $example para $FQBN"
+            arduino-cli compile --fqbn $FQBN "$example"
           done
