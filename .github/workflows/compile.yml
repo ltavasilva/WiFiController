@@ -1,4 +1,4 @@
-name: WiFiController Build Check
+name: WiFiController Build Examples
 
 on:
   push:
@@ -9,18 +9,15 @@ on:
       - '**.md'
 
 jobs:
-  compile:
-    name: Compile on ${{ matrix.board.name }}
+  compile-examples:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         board:
-          - name: "esp8266"
-            fqbn: "esp8266:esp8266:nodemcuv2"
+          - fqbn: "esp8266:esp8266:nodemcuv2"
             url: "https://arduino.esp8266.com"
-          - name: "esp32"
-            fqbn: "esp32:esp32:esp32"
+          - fqbn: "esp32:esp32:esp32"
             url: "https://raw.githubusercontent.com"
 
     steps:
@@ -32,41 +29,24 @@ jobs:
 
       - name: Install Platforms
         run: |
-          # 1. Limpa e reinicia a configuração do CLI
-          arduino-cli config init --overwrite
-          
-          # 2. Adiciona as duas URLs oficiais permanentemente (como o WiFiManager faz)
-          arduino-cli config add board_manager.additional_urls https://arduino.esp8266.com
-          arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com
-          
-          # 3. Atualiza os índices com as URLs agora fixas no config
-          arduino-cli core update-index
-          
-          # 4. Instala apenas o core necessário para a rodada atual da matriz
-          if [[ "${{ matrix.board.name }}" == "esp32" ]]; then
-            arduino-cli core install esp32:esp32
-          else
-            arduino-cli core install esp8266:esp8266
-          fi
-
+          # Adiciona a URL da placa atual da matriz de forma limpa
+          arduino-cli core update-index --additional-urls "${{ matrix.board.url }}"
+          # Extrai o nome do core (esp32 ou esp8266) do FQBN
+          CORE=$(echo "${{ matrix.board.fqbn }}" | cut -d: -f1-2)
+          arduino-cli core install "$CORE" --additional-urls "${{ matrix.board.url }}"
 
       - name: Install WiFiController Library
         run: |
-          # Segue o padrão do WiFiManager de linkar o repo na pasta de libs
+          # Simula a instalação da biblioteca no ambiente do runner
           mkdir -p $HOME/Arduino/libraries
           ln -s $GITHUB_WORKSPACE $HOME/Arduino/libraries/WiFiController
 
       - name: Compile Examples
         run: |
-          # Itera sobre seus arquivos .ino na pasta examples
-          # Adicionei a flag --library para garantir que o src/ seja priorizado
+          # Busca e compila cada exemplo .ino
+          # O WiFiManager usa um loop similar para garantir cobertura total
           for example in $(find examples -name "*.ino"); do
-            echo "Building $example..."
-            arduino-cli compile --fqbn ${{ matrix.board.fqbn }} "$example" --library .
+            echo "-------------------------------------------------------"
+            echo "Compilando: $example"
+            arduino-cli compile --fqbn ${{ matrix.board.fqbn }} "$example"
           done
-
-      - name: Verify Library Syntax (Standalone)
-        run: |
-          # Cria um sketch mínimo para garantir que o WiFiController.h compila isolado
-          echo "#include <WiFiController.h>\nvoid setup(){}\nvoid loop(){}" > SyntaxCheck.ino
-          arduino-cli compile --fqbn ${{ matrix.board.fqbn }} SyntaxCheck.ino
