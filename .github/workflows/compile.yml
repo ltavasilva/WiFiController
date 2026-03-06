@@ -1,37 +1,40 @@
-name: Arduino Compile
+name: Compile Examples
 
 on:
   push:
   pull_request:
 
 jobs:
-  build:
-
+  compile:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         fqbn:
+          - esp32:esp32:esp32dev
           - esp8266:esp8266:nodemcuv2
-          - esp32:esp32:esp32
 
     steps:
-
     - name: Checkout repository
       uses: actions/checkout@v4
 
     - name: Setup Arduino CLI
       uses: arduino/setup-arduino-cli@v1
 
-    - name: Install ESP8266 core
+    - name: Install cores
       run: |
         arduino-cli core update-index
+        arduino-cli core install esp32:esp32
         arduino-cli core install esp8266:esp8266
 
-    - name: Install ESP32 core
+    - name: Install required libraries
       run: |
-        arduino-cli core install esp32:esp32
+        arduino-cli lib install "DNSServer"
+        arduino-cli lib install "ESP8266WebServer"
+        arduino-cli lib install "ESP32"   # se necessário
+        # Adicione qualquer outra biblioteca usada nos exemplos
 
-    - name: Compile Examples
+    - name: Compile all examples
       run: |
-        arduino-cli compile --fqbn ${{ matrix.fqbn }} ./examples
+        for f in examples/*/*.ino; do
+          arduino-cli compile --fqbn ${{ matrix.fqbn }} "$f"
+        done
