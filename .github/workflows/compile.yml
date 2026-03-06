@@ -1,52 +1,36 @@
-name: Compile WiFiController Examples
+name: Arduino Build Multi-Platform
 
-on:
-  push:
-  pull_request:
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        fqbn:
-          - esp32:esp32:esp32
-          - esp8266:esp8266:nodemcuv2
+        # Define os FQBNs (Fully Qualified Board Names) para cada placa
+        board: [
+          "esp8266:esp8266:nodemcuv2", 
+          "esp32:esp32:esp32"
+        ]
+        include:
+          - board: "esp8266:esp8266:nodemcuv2"
+            platform-url: "https://arduino.esp8266.com/stable/package_esp8266com_index.json"
+          - board: "esp32:esp32:esp32"
+            platform-url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
 
     steps:
-      - name: Checkout repository
+      - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Setup Arduino CLI
-        uses: arduino/setup-arduino-cli@v1
+      - name: Configurar Arduino CLI
+        uses: arduino/setup-arduino-cli@v2
 
-      - name: Configure Arduino CLI for ESP8266
+      - name: Instalar Plataformas
         run: |
-          mkdir -p $HOME/.arduino15
-          echo 'board_manager:
-  additional_urls:
-    - https://arduino.esp8266.com/stable/package_esp8266com_index.json' > $HOME/.arduino15/arduino-cli.yaml
+          arduino-cli core update-index --additional-urls ${{ matrix.platform-url }}
+          arduino-cli core install ${{ matrix.board == 'esp32:esp32:esp32' && 'esp32:esp32' || 'esp8266:esp8266' }} --additional-urls ${{ matrix.platform-url }}
 
-      - name: Update cores index
-        run: arduino-cli core update-index
-
-      - name: Install ESP32 core
-        run: arduino-cli core install esp32:esp32
-
-      - name: Install ESP8266 core
-        run: arduino-cli core install esp8266:esp8266
-
-      - name: Install required libraries
+      - name: Compilar Sketch
         run: |
-          arduino-cli lib install "DNSServer"
-          arduino-cli lib install "ESP8266WebServer"
-          arduino-cli lib install "ESPmDNS"
-          arduino-cli lib install "ESPAsyncWebServer"
-
-      - name: Compile all examples
-        run: |
-          for f in examples/*/*.ino; do
-            echo "Compiling $f for ${{ matrix.fqbn }}"
-            arduino-cli compile --fqbn ${{ matrix.fqbn }} "$f"
-          done
+          # Substitua 'seu_projeto.ino' pelo nome real do seu arquivo
+          arduino-cli compile --fqbn ${{ matrix.board }} ./seu_projeto.ino
