@@ -26,8 +26,13 @@ jobs:
 
       - name: Instalar Plataforma
         run: |
-          arduino-cli core update-index --additional-urls ${{ matrix.platform-url }}
-          arduino-cli core install ${{ contains(matrix.board, 'esp32') && 'esp32:esp32' || 'esp8266:esp8266' }} --additional-urls ${{ matrix.platform-url }}
+          # 1. Adiciona a URL específica da placa da vez
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls ${{ matrix.platform-url }}
+          
+          # 2. Atualiza e instala
+          arduino-cli core update-index
+          arduino-cli core install ${{ contains(matrix.board, 'esp32') && 'esp32:esp32' || 'esp8266:esp8266' }}
 
       - name: Validar Compilação da Biblioteca
         run: |
