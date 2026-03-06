@@ -7,16 +7,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Define os FQBNs (Fully Qualified Board Names) para cada placa
         board: [
           "esp8266:esp8266:nodemcuv2", 
           "esp32:esp32:esp32"
         ]
         include:
           - board: "esp8266:esp8266:nodemcuv2"
-            platform-url: "https://arduino.esp8266.com/stable/package_esp8266com_index.json"
+            platform-url: "https://arduino.esp8266.com"
           - board: "esp32:esp32:esp32"
-            platform-url: "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
+            platform-url: "https://raw.githubusercontent.com"
 
     steps:
       - name: Checkout do código
@@ -25,12 +24,21 @@ jobs:
       - name: Configurar Arduino CLI
         uses: arduino/setup-arduino-cli@v2
 
-      - name: Instalar Plataformas
+      - name: Instalar Plataforma
         run: |
           arduino-cli core update-index --additional-urls ${{ matrix.platform-url }}
-          arduino-cli core install ${{ matrix.board == 'esp32:esp32:esp32' && 'esp32:esp32' || 'esp8266:esp8266' }} --additional-urls ${{ matrix.platform-url }}
+          arduino-cli core install ${{ contains(matrix.board, 'esp32') && 'esp32:esp32' || 'esp8266:esp8266' }} --additional-urls ${{ matrix.platform-url }}
 
-      - name: Compilar Sketch
+      - name: Validar Compilação da Biblioteca
         run: |
-          # Substitua 'seu_projeto.ino' pelo nome real do seu arquivo
-          arduino-cli compile --fqbn ${{ matrix.board }} ./seu_projeto.ino
+          # 1. Organiza a pasta de libs para o compilador achar seu .h e .cpp
+          mkdir -p $HOME/Arduino/libraries
+          ln -s $GITHUB_WORKSPACE $HOME/Arduino/libraries/WiFiController
+
+          # 2. Cria sketch temporário de teste
+          echo '#include <WiFiController.h>' > ValidacaoLib.ino
+          echo 'void setup() {}' >> ValidacaoLib.ino
+          echo 'void loop() {}' >> ValidacaoLib.ino
+
+          # 3. Compila
+          arduino-cli compile --fqbn ${{ matrix.board }} ValidacaoLib.ino
