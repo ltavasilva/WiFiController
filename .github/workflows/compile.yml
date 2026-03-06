@@ -1,49 +1,59 @@
-name: Arduino Build Multi-Platform
+name: WiFiController Build Check
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
 
 jobs:
-  build:
+  compile:
+    name: Compile on ${{ matrix.board.name }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        board: [
-          "esp8266:esp8266:nodemcuv2", 
-          "esp32:esp32:esp32"
-        ]
-        include:
-          - board: "esp8266:esp8266:nodemcuv2"
-            platform-url: "https://arduino.esp8266.com"
-          - board: "esp32:esp32:esp32"
-            platform-url: "https://raw.githubusercontent.com"
+        board:
+          - name: "esp8266"
+            fqbn: "esp8266:esp8266:nodemcuv2"
+            url: "https://arduino.esp8266.com"
+          - name: "esp32"
+            fqbn: "esp32:esp32:esp32"
+            url: "https://raw.githubusercontent.com"
 
     steps:
-      - name: Checkout do código
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configurar Arduino CLI
+      - name: Setup Arduino CLI
         uses: arduino/setup-arduino-cli@v2
 
-      - name: Instalar Plataforma
+      - name: Install Platforms
         run: |
-          # 1. Adiciona a URL específica da placa da vez
           arduino-cli config init
-          arduino-cli config add board_manager.additional_urls ${{ matrix.platform-url }}
-          
-          # 2. Atualiza e instala
+          arduino-cli config add board_manager.additional_urls ${{ matrix.board.url }}
           arduino-cli core update-index
-          arduino-cli core install ${{ contains(matrix.board, 'esp32') && 'esp32:esp32' || 'esp8266:esp8266' }}
+          arduino-cli core install ${{ matrix.board.name }}:${{ matrix.board.name }}
 
-      - name: Validar Compilação da Biblioteca
+      - name: Install WiFiController Library
         run: |
-          # 1. Organiza a pasta de libs para o compilador achar seu .h e .cpp
+          # Segue o padrão do WiFiManager de linkar o repo na pasta de libs
           mkdir -p $HOME/Arduino/libraries
           ln -s $GITHUB_WORKSPACE $HOME/Arduino/libraries/WiFiController
 
-          # 2. Cria sketch temporário de teste
-          echo '#include <WiFiController.h>' > ValidacaoLib.ino
-          echo 'void setup() {}' >> ValidacaoLib.ino
-          echo 'void loop() {}' >> ValidacaoLib.ino
+      - name: Compile Examples
+        run: |
+          # Itera sobre seus arquivos .ino na pasta examples
+          # Adicionei a flag --library para garantir que o src/ seja priorizado
+          for example in $(find examples -name "*.ino"); do
+            echo "Building $example..."
+            arduino-cli compile --fqbn ${{ matrix.board.fqbn }} "$example" --library .
+          done
 
-          # 3. Compila
-          arduino-cli compile --fqbn ${{ matrix.board }} ValidacaoLib.ino
+      - name: Verify Library Syntax (Standalone)
+        run: |
+          # Cria um sketch mínimo para garantir que o WiFiController.h compila isolado
+          echo "#include <WiFiController.h>\nvoid setup(){}\nvoid loop(){}" > SyntaxCheck.ino
+          arduino-cli compile --fqbn ${{ matrix.board.fqbn }} SyntaxCheck.ino
