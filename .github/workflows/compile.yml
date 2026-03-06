@@ -19,17 +19,17 @@ jobs:
 
       - name: Install Platforms
         run: |
-          # 1. Configura as URLs fixas para evitar erro de variável inválida
-          arduino-cli config init --overwrite
-          arduino-cli config add board_manager.additional_urls https://arduino.esp8266.com
-          arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com
+          # Define as URLs como variáveis locais simples para evitar erros de parser
+          URL_8266="https://arduino.esp8266.com"
+          URL_32="https://raw.githubusercontent.com"
           
-          # 2. Atualiza e instala de acordo com a placa da vez
-          arduino-cli core update-index
+          # Instala o core específico baseado na matriz usando a flag direta
           if [ "${{ matrix.board }}" == "esp8266" ]; then
-            arduino-cli core install esp8266:esp8266
+            arduino-cli core update-index --additional-urls "$URL_8266"
+            arduino-cli core install esp8266:esp8266 --additional-urls "$URL_8266"
           else
-            arduino-cli core install esp32:esp32
+            arduino-cli core update-index --additional-urls "$URL_32"
+            arduino-cli core install esp32:esp32 --additional-urls "$URL_32"
           fi
 
       - name: Install Library
@@ -39,15 +39,12 @@ jobs:
 
       - name: Build Examples
         run: |
-          # Define o FQBN correto baseado na matriz
-          if [ "${{ matrix.board }}" == "esp8266" ]; then
-            FQBN="esp8266:esp8266:nodemcuv2"
-          else
-            FQBN="esp32:esp32:esp32"
-          fi
+          # Define o FQBN exato
+          [ "${{ matrix.board }}" == "esp8266" ] && FQBN="esp8266:esp8266:nodemcuv2" || FQBN="esp32:esp32:esp32"
           
-          # Busca e compila cada exemplo .ino
+          # Compila cada exemplo encontrado
           for example in $(find examples -name "*.ino"); do
-            echo "Compilando: $example para $FQBN"
-            arduino-cli compile --fqbn $FQBN "$example"
+            echo "Building: $example"
+            arduino-cli compile --fqbn "$FQBN" "$example"
           done
+
