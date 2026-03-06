@@ -15,37 +15,38 @@ jobs:
           - esp8266:esp8266:nodemcuv2
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup Arduino CLI
-      uses: arduino/setup-arduino-cli@v1
+      - name: Setup Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
 
-    - name: Update index and install cores
-      run: |
-        arduino-cli core update-index
-        arduino-cli core install esp32:esp32
+      - name: Configure Arduino CLI for ESP8266
+        run: |
+          mkdir -p $HOME/.arduino15
+          echo 'board_manager:
+  additional_urls:
+    - https://arduino.esp8266.com/stable/package_esp8266com_index.json' > $HOME/.arduino15/arduino-cli.yaml
 
-    - name: Add ESP8266 package URL
-      run: |
-        mkdir -p ~/.arduino15/
-        echo "https://arduino.esp8266.com/stable/package_esp8266com_index.json" > ~/.arduino15/package_esp8266com_index.json
+      - name: Update cores index
+        run: arduino-cli core update-index
 
-    - name: Install ESP8266 core
-      run: |
-        arduino-cli core update-index
-        arduino-cli core install esp8266:esp8266
+      - name: Install ESP32 core
+        run: arduino-cli core install esp32:esp32
 
-    - name: Install required libraries
-      run: |
-        arduino-cli lib install "DNSServer"
-        arduino-cli lib install "ESP8266WebServer"
-        arduino-cli lib install "ESPmDNS"
-        arduino-cli lib install "ESPAsyncWebServer"
+      - name: Install ESP8266 core
+        run: arduino-cli core install esp8266:esp8266
 
-    - name: Compile all examples
-      run: |
-        for f in examples/*/*.ino; do
-          echo "Compiling $f for ${{ matrix.fqbn }}"
-          arduino-cli compile --fqbn ${{ matrix.fqbn }} "$f"
-        done
+      - name: Install required libraries
+        run: |
+          arduino-cli lib install "DNSServer"
+          arduino-cli lib install "ESP8266WebServer"
+          arduino-cli lib install "ESPmDNS"
+          arduino-cli lib install "ESPAsyncWebServer"
+
+      - name: Compile all examples
+        run: |
+          for f in examples/*/*.ino; do
+            echo "Compiling $f for ${{ matrix.fqbn }}"
+            arduino-cli compile --fqbn ${{ matrix.fqbn }} "$f"
+          done
