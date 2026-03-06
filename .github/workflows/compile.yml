@@ -1,16 +1,19 @@
-name: Compile Examples
+name: Compile WiFiController Examples
 
 on:
   push:
   pull_request:
 
 jobs:
-  compile:
+  build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         fqbn:
-          - esp32:esp32:esp32dev
+          # ESP32 testado
+          - esp32:esp32:esp32
+          # ESP8266 testado
           - esp8266:esp8266:nodemcuv2
 
     steps:
@@ -20,7 +23,7 @@ jobs:
     - name: Setup Arduino CLI
       uses: arduino/setup-arduino-cli@v1
 
-    - name: Install cores
+    - name: Update index and install cores
       run: |
         arduino-cli core update-index
         arduino-cli core install esp32:esp32
@@ -30,11 +33,12 @@ jobs:
       run: |
         arduino-cli lib install "DNSServer"
         arduino-cli lib install "ESP8266WebServer"
-        arduino-cli lib install "ESP32"   # se necessário
-        # Adicione qualquer outra biblioteca usada nos exemplos
+        arduino-cli lib install "ESPmDNS"
+        arduino-cli lib install "ESPAsyncWebServer"
 
     - name: Compile all examples
       run: |
         for f in examples/*/*.ino; do
+          echo "Compiling $f for ${{ matrix.fqbn }}"
           arduino-cli compile --fqbn ${{ matrix.fqbn }} "$f"
         done
