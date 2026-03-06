@@ -32,10 +32,23 @@ jobs:
 
       - name: Install Platforms
         run: |
-          arduino-cli config init
-          arduino-cli config add board_manager.additional_urls ${{ matrix.board.url }}
+          # 1. Limpa e reinicia a configuração do CLI
+          arduino-cli config init --overwrite
+          
+          # 2. Adiciona as duas URLs oficiais permanentemente (como o WiFiManager faz)
+          arduino-cli config add board_manager.additional_urls https://arduino.esp8266.com
+          arduino-cli config add board_manager.additional_urls https://raw.githubusercontent.com
+          
+          # 3. Atualiza os índices com as URLs agora fixas no config
           arduino-cli core update-index
-          arduino-cli core install ${{ matrix.board.name }}:${{ matrix.board.name }}
+          
+          # 4. Instala apenas o core necessário para a rodada atual da matriz
+          if [[ "${{ matrix.board.name }}" == "esp32" ]]; then
+            arduino-cli core install esp32:esp32
+          else
+            arduino-cli core install esp8266:esp8266
+          fi
+
 
       - name: Install WiFiController Library
         run: |
