@@ -1,8 +1,12 @@
+![WiFiController](extras/banner.png)
+
+![Build](https://github.com/ltavasilva/WiFiController/actions/workflows/compile.yml/badge.svg)
 ![ESP8266](https://img.shields.io/badge/ESP8266-supported-blue)
 ![ESP32](https://img.shields.io/badge/ESP32-supported-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
-![Version](https://img.shields.io/badge/version-1.0-brightgreen)
-![Build](https://github.com/ltavasilva/WiFiController/actions/workflows/compile.yml/badge.svg)
+
+[![Arduino Library](https://www.ardu-badge.com/badge/WiFiController.svg)](https://www.ardu-badge.com/WiFiController)
+
 # WiFiController
 
 Biblioteca para gerenciamento simplificado de WiFi em **ESP8266** e **ESP32**.
@@ -100,3 +104,4 @@ Callbacks_e_Eventos	Monitoramento de eventos
 👨‍💻 Autor: Leandro Tavares da Silva
 
 GitHub: https://github.com/ltavasilva
+
