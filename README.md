@@ -2,6 +2,7 @@
 ![ESP32](https://img.shields.io/badge/ESP32-supported-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Version](https://img.shields.io/badge/version-1.0-brightgreen)
+![Build](https://github.com/ltavasilva/WiFiController/actions/workflows/compile.yml/badge.svg)
 # WiFiController
 
 Biblioteca para gerenciamento simplificado de WiFi em **ESP8266** e **ESP32**.
@@ -97,4 +98,5 @@ AP_Fallback_Automatico	Portal automático se falhar
 Callbacks_e_Eventos	Monitoramento de eventos
 
 👨‍💻 Autor: Leandro Tavares da Silva
+
 GitHub: https://github.com/ltavasilva
