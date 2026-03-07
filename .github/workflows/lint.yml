@@ -11,3 +11,6 @@ jobs:
 
       - name: Run Arduino Lint
         uses: arduino/arduino-lint-action@v2
+        with:
+          # Esta flag avisa que você está atualizando uma biblioteca existente
+          flags: --library-manager update
